@@ -155,47 +155,38 @@ function App() {
       // Criar um novo documento para o resultado
       const resultPdfDoc = await PDFDocument.create();
       
-      // Copiar páginas do PDF de conteúdo
+      // Copiar páginas do PDF de conteúdo e estilo
       const contentPages = contentPdfDoc.getPages();
       const stylePages = stylePdfDoc.getPages();
       
-      // Obter dimensões da primeira página do PDF de estilo
-      const stylePage = stylePages[0];
-      const { width: styleWidth, height: styleHeight } = stylePage.getSize();
-      
+      if (stylePages.length === 0) {
+        throw new Error('O PDF de estilo não contém páginas.');
+      }
+      const templatePage = stylePages[0]; // Usar a primeira página do PDF de estilo como template
+
       try {
         // Copiar cada página do conteúdo e aplicar o estilo
         for (let i = 0; i < contentPages.length; i++) {
           const contentPage = contentPages[i];
-          
-          // Criar uma nova página com as dimensões do PDF de estilo
-          const newPage = resultPdfDoc.addPage([styleWidth, styleHeight]);
-          
-          // Extrair o texto do conteúdo
-          const { width: contentWidth, height: contentHeight } = contentPage.getSize();
-          
-          // Calcular a escala para ajustar o conteúdo à nova página
-          const scaleX = styleWidth / contentWidth;
-          const scaleY = styleHeight / contentHeight;
-          const scale = Math.min(scaleX, scaleY);
-          
-          // Calcular posição central
-          const scaledWidth = contentWidth * scale;
-          const scaledHeight = contentHeight * scale;
-          const x = (styleWidth - scaledWidth) / 2;
-          const y = (styleHeight - scaledHeight) / 2;
-          
-          // Embed the content page
-          const embeddedPage = await resultPdfDoc.embedPage(contentPage);
 
-          // Draw the embedded page onto the new page with scaling and position
+          // Copiar a página de template para o PDF resultante
+          const copiedPages = await resultPdfDoc.copyPages(stylePdfDoc, [0]); // Copia a primeira página do stylePdfDoc
+          const newPage = copiedPages[0];
+          resultPdfDoc.addPage(newPage);
+
+          // Embed the content page (mantendo a lógica anterior para testar o layout)
+          const embeddedPage = await resultPdfDoc.embedPage(contentPage);
           newPage.drawPage(embeddedPage, {
-            x,
-            y,
-            xScale: scale,
-            yScale: scale,
+            x: 0, // Resetando para posição original para teste
+            y: 0,
+            xScale: 1, // Resetando para escala original para teste
+            yScale: 1,
           });
         }
+        // Remover a página modelo original que foi copiada (a primeira página, que está duplicada agora)
+        resultPdfDoc.removePage(0);
+
+
       } catch (e) {
         const error = new Error('Erro ao processar as páginas do PDF. Por favor, verifique se os arquivos são válidos.') as PDFProcessingError;
         error.code = 'PAGE_PROCESSING_ERROR';
