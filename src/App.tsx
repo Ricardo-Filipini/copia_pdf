@@ -185,8 +185,11 @@ function App() {
           const x = (styleWidth - scaledWidth) / 2;
           const y = (styleHeight - scaledHeight) / 2;
           
-          // Copiar o conteúdo para a nova página
-          newPage.drawPage(contentPage, {
+          // Embed the content page
+          const embeddedPage = await resultPdfDoc.embedPage(contentPage);
+
+          // Draw the embedded page onto the new page with scaling and position
+          newPage.drawPage(embeddedPage, {
             x,
             y,
             xScale: scale,
